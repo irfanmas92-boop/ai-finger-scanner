@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>AI Finger Scanner - Perasmian Pintar Kreatif 2026</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepNavy: '#081126',
+                        techBlue: '#00d4ff',
+                        silverLight: '#ffffff',
+                        silverMid: '#a0aec0',
+                        silverDark: '#718096',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        cinematic: ['Montserrat', 'sans-serif'],
+                        tech: ['Orbitron', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Orbitron:wght@500;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Tone.js for Audio Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        /* Base Reset & Lock Viewport */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #081126;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* Cinematic Background */
+        .bg-cinematic {
+            background: radial-gradient(circle at center, #0d2354 0%, #081126 70%, #03060f 100%);
+        }
+
+        .digital-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Typography */
+        .text-silver-metallic {
+            background: linear-gradient(to bottom, #ffffff 0%, #cbd5e1 40%, #94a3b8 80%, #f1f5f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0px 4px 15px rgba(255, 255, 255, 0.2);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+        }
+
+        .text-neon-blue {
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8), 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(8, 17, 38, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        /* Touch Initializer Ring */
+        .touch-ring-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .touch-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2), inset 0 0 20px rgba(0, 212, 255, 0.1);
+            animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .touch-ring:nth-child(2) {
+            animation-delay: -1s;
+            border: 1px dashed rgba(0, 212, 255, 0.6);
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        /* Video & Canvas Frame */
+        .scanner-frame {
+            position: relative;
+            width: 800px;
+            max-width: 90vw;
+            height: 450px;
+            max-height: 60vh;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.15);
+        }
+
+        /* Mirror the video and canvas so hand movements feel natural */
+        .mirrored {
+            transform: scaleX(-1);
+        }
+
+        #webcam-video, #output-canvas, #fx-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #output-canvas {
+            z-index: 10;
+        }
+
+        #fx-canvas {
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* Target Reticle */
+        .target-reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px dashed rgba(0, 212, 255, 0.5);
+            z-index: 15;
+            transition: all 0.3s ease;
+        }
+
+        .target-reticle::after {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: #00d4ff;
+            border-bottom-color: #00d4ff;
+            animation: spin 4s linear infinite;
+        }
+
+        .target-reticle.active {
+            border: 2px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .target-reticle.active::after {
+            animation: spin 1s linear infinite;
+            border-color: #00d4ff;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Visual Scanning Effect Layer */
+        .scan-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(8, 17, 38, 0.85);
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .scan-overlay.active {
+            opacity: 1;
+        }
+
+        .scan-beam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #00d4ff;
+            box-shadow: 0 0 20px 10px rgba(0, 212, 255, 0.5);
+            z-index: 26;
+            opacity: 0;
+        }
+
+        .scan-overlay.active .scan-beam {
+            animation: scan-down 3s linear infinite;
+            opacity: 1;
+        }
+
+        @keyframes scan-down {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        /* Ceremony Video Screen */
+        #screen-video {
+            background: #000;
+        }
+
+        #ceremony-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        /* FX Flashes */
+        .flash-bang {
+            position: fixed;
+            inset: 0;
+            background: #00d4ff;
+            mix-blend-mode: screen;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .flash-bang.on {
+            opacity: 1;
+            transition: none;
+        }
+
+    </style>
+</head>
+<body class="bg-cinematic text-white font-sans flex flex-col items-center justify-center relative">
+
+    <!-- Global Digital Grid -->
+    <div class="digital-grid"></div>
+
+    <!-- Top UI Controls (Absolute) -->
+    <div id="top-controls" class="absolute top-4 left-6 right-6 flex justify-between items-start z-[80] pointer-events-none transition-opacity duration-500">
+        <div class="flex gap-4 pointer-events-auto">
+            <button id="btn-audio" class="glass-panel px-4 py-2 rounded-lg text-silverMid text-xs font-tech tracking-widest hover:text-white transition-colors border border-gray-600">
+                AUDIO: OFF
+            </button>
+            <button id="btn-fullscreen" class="glass-panel px-4 py-2 rounded-lg text-silverMid text-xs font-tech tracking-widest hover:text-white transition-colors border border-gray-600">
+                [ ] FULLSCREEN
+            </button>
+        </div>
+        <div class="flex gap-4 pointer-events-auto">
+            <button id="btn-skip-video" class="hidden glass-panel px-5 py-2 rounded-lg text-silverMid text-xs font-tech tracking-widest hover:text-white transition-colors border border-gray-600">
+                SKIP VIDEO &raquo;
+            </button>
+            <button id="btn-restart" class="hidden glass-panel px-5 py-2 rounded-lg text-techBlue text-xs font-tech tracking-widest hover:bg-techBlue hover:text-deepNavy transition-all shadow-[0_0_15px_rgba(0,212,255,0.2)]">
+                RESTART SYSTEM
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= SCREEN 1: WELCOME / INITIAL TOUCH ================= -->
+    <div id="screen-welcome" class="absolute inset-0 flex flex-col items-center justify-center z-40 transition-opacity duration-1000 w-full h-full p-6">
+
+        <!-- Headers -->
+        <div class="text-center mb-10 flex flex-col items-center max-w-5xl">
+            <h2 class="text-techBlue font-tech tracking-[0.3em] text-sm md:text-lg mb-2 opacity-80 drop-shadow-md">
+                ARTIFICIAL INTELLIGENCE HAND DETECTION SYSTEM
+            </h2>
+            <h1 class="font-tech font-bold text-5xl md:text-6xl text-silver-metallic tracking-widest mb-8 drop-shadow-2xl">
+                AI FINGER SCANNER
+            </h1>
+
+            <div class="w-2/3 h-px bg-gradient-to-r from-transparent via-techBlue to-transparent opacity-50 mb-8"></div>
+
+            <h3 class="font-cinematic font-bold text-2xl md:text-3xl text-silver-metallic tracking-wider leading-snug drop-shadow-xl uppercase">
+                PERASMIAN PROGRAM PINTAR KREATIF<br>PERINGKAT NEGERI TERENGGANU TAHUN 2026
+            </h3>
+        </div>
+
+        <!-- Touch Interaction Zone -->
+        <div class="flex-grow flex flex-col items-center justify-center mt-4">
+            <div id="touch-initiator" class="touch-ring-container glass-panel bg-deepNavy/40 backdrop-blur-md">
+                <div class="touch-ring"></div>
+                <div class="touch-ring"></div>
+                <!-- Fingerprint Icon (SVG) -->
+                <svg class="w-24 h-24 text-techBlue drop-shadow-[0_0_15px_rgba(0,212,255,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/>
+                    <path d="M12 8v4l3 3"/>
+                    <path d="M7.5 7.5l.5 .5"/>
+                    <path d="M16.5 7.5l-.5 .5"/>
+                    <path d="M7.5 16.5l.5 -.5"/>
+                    <path d="M16.5 16.5l-.5 -.5"/>
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            </div>
+
+            <div class="mt-12 text-center">
+                <p class="text-techBlue font-tech text-xl tracking-[0.2em] font-bold animate-pulse">
+                    TOUCH TO BEGIN
+                </p>
+                <p class="text-silverMid font-sans mt-3 text-sm tracking-wider opacity-80">
+                    TOUCH YOUR FINGER TO START THE OPENING CEREMONY.
+                </p>
+            </div>
+        </div>
+
+        <!-- Initialization text (hidden initially) -->
+        <p id="init-text" class="absolute bottom-12 text-techBlue font-tech tracking-[0.2em] text-lg opacity-0 transition-opacity duration-300">
+            INITIALISING AI FINGER SCANNER...
+        </p>
+    </div>
+
+
+    <!-- ================= SCREEN 2: SCANNER & WEBCAM ================= -->
+    <div id="screen-scanner" class="absolute inset-0 flex flex-col items-center justify-center z-30 opacity-0 pointer-events-none transition-opacity duration-1000 p-6">
+
+        <div class="text-center mb-6">
+            <h2 class="text-techBlue font-tech tracking-[0.3em] text-lg drop-shadow-md" id="scanner-title">
+                CAMERA INITIALISING...
+            </h2>
+            <p class="text-silverMid font-sans mt-2 text-sm tracking-widest" id="scanner-subtitle">
+                PLEASE WAIT
+            </p>
+        </div>
+
+        <div class="scanner-frame glass-panel relative">
+            <!-- Actual Webcam Video -->
+            <video id="webcam-video" class="mirrored" autoplay playsinline muted></video>
+
+            <!-- Canvas for MediaPipe Drawing -->
+            <canvas id="output-canvas" class="mirrored"></canvas>
+
+            <!-- Target Reticle for Finger -->
+            <div id="target-reticle" class="target-reticle hidden">
+                <!-- Circular progress ring via conic-gradient -->
+                <div id="position-progress" class="absolute inset-[-4px] rounded-full z-10" style="background: conic-gradient(#00d4ff 0%, transparent 0%); -webkit-mask: radial-gradient(transparent 58px, #000 60px); mask: radial-gradient(transparent 58px, #000 60px);"></div>
+            </div>
+
+            <!-- Canvas for overlay FX -->
+            <canvas id="fx-canvas"></canvas>
+
+            <!-- Visual Scanning Effect Overlay -->
+            <div id="scan-overlay" class="scan-overlay">
+                <div class="scan-beam"></div>
+
+                <!-- Fingerprint Graphic for Visual Effect -->
+                <svg class="absolute w-64 h-64 text-techBlue/30 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.590-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.690-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+                </svg>
+
+                <p id="scan-fx-text" class="text-techBlue font-tech text-xl tracking-[0.2em] font-bold mt-32 drop-shadow-[0_0_10px_rgba(0,212,255,0.8)] z-30">
+                    INITIALISING SCAN...
+                </p>
+                <p id="scan-fx-percent" class="text-silverLight font-tech text-4xl font-bold mt-4 drop-shadow-md z-30">
+                    0%
+                </p>
+            </div>
+        </div>
+
+        <button id="btn-retry-cam" class="hidden mt-6 glass-panel px-6 py-3 rounded-lg text-techBlue font-tech tracking-widest hover:bg-techBlue hover:text-deepNavy transition-all border border-techBlue/30 pointer-events-auto">
+            RETRY CAMERA
+        </button>
+    </div>
+
+
+    <!-- ================= SCREEN 3: CEREMONY VIDEO ================= -->
+    <div id="screen-video" class="absolute inset-0 flex items-center justify-center z-[60] opacity-0 pointer-events-none transition-opacity duration-1000">
+        <video id="ceremony-video" playsinline preload="auto">
+            <source src="ceremony_video.mp4" type="video/mp4">
+        </video>
+
+        <!-- Shown only if the browser refuses to start the video with sound -->
+        <button id="btn-play-video" class="hidden absolute glass-panel px-8 py-4 rounded-xl text-techBlue font-tech text-lg tracking-[0.2em] hover:bg-techBlue hover:text-deepNavy transition-all border border-techBlue/40">
+            &#9654; PLAY VIDEO
+        </button>
+    </div>
+
+    <!-- ================= SCREEN 4: FINAL ================= -->
+    <div id="screen-final" class="absolute inset-0 flex flex-col items-center justify-center z-50 opacity-0 pointer-events-none bg-cinematic transition-opacity duration-1000">
+        <h1 class="font-cinematic font-bold text-3xl md:text-4xl lg:text-5xl text-silver-metallic tracking-[0.1em] text-center drop-shadow-[0_0_40px_rgba(0,212,255,0.5)] px-6 leading-tight uppercase">
+            PERASMIAN PROGRAM PINTAR KREATIF<br>PERINGKAT NEGERI TERENGGANU TAHUN 2026<br><span class="text-techBlue text-5xl md:text-6xl lg:text-7xl mt-6 block">BERLANGSUNG</span>
+        </h1>
+        <div class="mt-10 w-[300px] h-1 bg-gradient-to-r from-transparent via-techBlue to-transparent shadow-[0_0_20px_rgba(0,212,255,0.8)]"></div>
+    </div>
+
+    <!-- FX Layer -->
+    <div id="flash-bang" class="flash-bang"></div>
+
+
+    <!-- ================= APPLICATION LOGIC ================= -->
+    <script type="module">
+        import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+        // --- CONSTANTS & STATE ---
+        const State = {
+            WELCOME: 'WELCOME',
+            INIT_CAM: 'INIT_CAM',
+            DETECTING: 'DETECTING',
+            POSITIONING: 'POSITIONING',
+            SCANNING: 'SCANNING',
+            COMPLETE: 'COMPLETE',
+            VIDEO: 'VIDEO',
+            FINAL: 'FINAL'
+        };
+
+        let currentState = State.WELCOME;
+        let audioEnabled = false;
+
+        // MediaPipe & Camera
+        let handLandmarker = undefined;
+        let webcamStream = null;
+        let lastVideoTime = -1;
+        let isDetecting = false;
+        let animationFrameId = null;
+
+        // Positioning Logic
+        const TARGET_RADIUS = 60; // radius of reticle
+        let positionStartTime = 0;
+        const POSITION_REQUIREMENT_MS = 2000;
+        let scanInterval = null;
+        const pendingTimers = new Set();
+
+        function later(fn, ms) {
+            const id = setTimeout(() => { pendingTimers.delete(id); fn(); }, ms);
+            pendingTimers.add(id);
+            return id;
+        }
+
+        // --- DOM ELEMENTS ---
+        const els = {
+            topControls: document.getElementById('top-controls'),
+            btnAudio: document.getElementById('btn-audio'),
+            btnFullscreen: document.getElementById('btn-fullscreen'),
+            btnRestart: document.getElementById('btn-restart'),
+            btnSkipVideo: document.getElementById('btn-skip-video'),
+            btnRetryCam: document.getElementById('btn-retry-cam'),
+            btnPlayVideo: document.getElementById('btn-play-video'),
+
+            screens: {
+                welcome: document.getElementById('screen-welcome'),
+                scanner: document.getElementById('screen-scanner'),
+                video: document.getElementById('screen-video'),
+                final: document.getElementById('screen-final')
+            },
+
+            touchInitiator: document.getElementById('touch-initiator'),
+            initText: document.getElementById('init-text'),
+
+            video: document.getElementById('webcam-video'),
+            canvas: document.getElementById('output-canvas'),
+            ctx: document.getElementById('output-canvas').getContext('2d'),
+            fxCanvas: document.getElementById('fx-canvas'),
+            fxCtx: document.getElementById('fx-canvas').getContext('2d'),
+
+            scannerTitle: document.getElementById('scanner-title'),
+            scannerSubtitle: document.getElementById('scanner-subtitle'),
+            targetReticle: document.getElementById('target-reticle'),
+            positionProgress: document.getElementById('position-progress'),
+
+            scanOverlay: document.getElementById('scan-overlay'),
+            scanFxText: document.getElementById('scan-fx-text'),
+            scanFxPercent: document.getElementById('scan-fx-percent'),
+
+            ceremonyVideo: document.getElementById('ceremony-video'),
+            flashBang: document.getElementById('flash-bang'),
+        };
+
+        function flash(background, holdMs) {
+            els.flashBang.style.background = background;
+            els.flashBang.classList.add('on');
+            later(() => els.flashBang.classList.remove('on'), holdMs);
+        }
+
+        // --- AUDIO ENGINE (Tone.js) ---
+        const audioNodes = {};
+        let bgmLoop = null;
+        let audioBuilt = false;
+
+        async function initAudio() {
+            if (audioEnabled) return;
+            await Tone.start();
+            if (Tone.context.state !== 'running') await Tone.context.resume();
+            audioEnabled = true;
+            els.btnAudio.textContent = 'AUDIO: ON';
+            els.btnAudio.classList.remove('text-silverMid', 'border-gray-600');
+            els.btnAudio.classList.add('bg-techBlue/20', 'text-techBlue', 'border-techBlue/50');
+
+            if (audioBuilt) return;
+            audioBuilt = true;
+
+            // --- MASTER EFFECTS ---
+            audioNodes.master = new Tone.Volume(0).toDestination();
+            audioNodes.reverb = new Tone.Freeverb({ roomSize: 0.85, dampening: 3000 }).connect(audioNodes.master);
+            audioNodes.compressor = new Tone.Compressor({ threshold: -20, ratio: 4 }).connect(audioNodes.reverb);
+
+            // --- BGM SYNTHS ---
+            audioNodes.bgmDrone = new Tone.FMSynth({
+                harmonicity: 0.5, modulationIndex: 1.5,
+                oscillator: { type: "sine" }, modulation: { type: "sawtooth" },
+                envelope: { attack: 3, decay: 2, sustain: 1, release: 5 }
+            }).connect(audioNodes.reverb);
+            audioNodes.bgmDrone.volume.value = -12;
+
+            audioNodes.bgmArp = new Tone.Synth({
+                oscillator: { type: "fmsquare", modulationType: "triangle", harmonicity: 2 },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0.1, release: 1 }
+            }).connect(audioNodes.compressor);
+            audioNodes.bgmArp.volume.value = -18;
+
+            // Suspense Arpeggiator (C minor)
+            const arpNotes = ["C3", "G3", "D#3", "C4"];
+            let arpIdx = 0;
+            bgmLoop = new Tone.Loop(time => {
+                audioNodes.bgmArp.triggerAttackRelease(arpNotes[arpIdx % arpNotes.length], "8n", time);
+                arpIdx++;
+            }, "8n");
+
+            // --- SFX SYNTHS ---
+            audioNodes.touch = new Tone.Synth({
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.05, decay: 0.5, sustain: 0, release: 1 }
+            }).connect(audioNodes.master);
+
+            audioNodes.beep = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.05 }
+            }).connect(audioNodes.master);
+            audioNodes.beep.volume.value = -10;
+
+            audioNodes.scanHum = new Tone.NoiseSynth({
+                noise: { type: 'pink' }, envelope: { attack: 1, decay: 0.1, sustain: 1, release: 1 }
+            });
+            audioNodes.scanFilter = new Tone.Filter(400, "lowpass").connect(audioNodes.master);
+            audioNodes.scanHum.connect(audioNodes.scanFilter);
+            audioNodes.scanHum.volume.value = -12;
+
+            audioNodes.chime = new Tone.FMSynth({
+                modulationIndex: 8, envelope: { attack: 0.01, decay: 0.5, sustain: 0.5, release: 3 }
+            }).connect(audioNodes.reverb);
+            audioNodes.chime.volume.value = -5;
+
+            audioNodes.kick = new Tone.MembraneSynth({
+                pitchDecay: 0.08, octaves: 5, envelope: { attack: 0.005, decay: 0.8, sustain: 0, release: 1.5 }
+            }).connect(audioNodes.compressor);
+
+            audioNodes.noiseCrash = new Tone.NoiseSynth({
+                noise: { type: 'white' }, envelope: { attack: 0.01, decay: 2, sustain: 0, release: 2 }
+            }).connect(audioNodes.reverb);
+
+            // Epic Brass/Strings Finale
+            audioNodes.finaleBrass = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "fatsawtooth", count: 4, spread: 30 },
+                envelope: { attack: 0.4, decay: 1, sustain: 0.8, release: 6 }
+            }).connect(audioNodes.compressor);
+            audioNodes.finaleBrass.volume.value = -2;
+
+            Tone.Transport.start();
+        }
+
+        function stopBgm() {
+            if (!audioBuilt) return;
+            try {
+                if (bgmLoop) { bgmLoop.stop(); bgmLoop.playbackRate = 1; }
+                audioNodes.bgmDrone.triggerRelease();
+                audioNodes.scanHum.triggerRelease();
+            } catch (e) { console.warn("Audio err", e); }
+        }
+
+        function playSound(type) {
+            if (!audioEnabled || !audioBuilt || Tone.context.state !== 'running') return;
+            try {
+                switch(type) {
+                    case 'touch':
+                        audioNodes.touch.triggerAttackRelease("E5", "8n");
+                        audioNodes.bgmDrone.volume.value = -12;
+                        audioNodes.bgmDrone.triggerAttack("C2");
+                        break;
+                    case 'cam_active':
+                        if (bgmLoop && bgmLoop.state !== 'started') bgmLoop.start(0);
+                        break;
+                    case 'beep':
+                        audioNodes.beep.triggerAttackRelease(800, 0.1);
+                        break;
+                    case 'scan_start':
+                        audioNodes.scanFilter.frequency.value = 400;
+                        audioNodes.scanHum.triggerAttack();
+                        audioNodes.scanFilter.frequency.rampTo(2000, 3);
+                        if (bgmLoop) bgmLoop.playbackRate = 1.5; // Increase tension
+                        audioNodes.bgmDrone.frequency.rampTo("G2", 2);
+                        break;
+                    case 'scan_stop':
+                        audioNodes.scanHum.triggerRelease();
+                        if (bgmLoop) bgmLoop.playbackRate = 1;
+                        break;
+                    case 'scan_complete':
+                        audioNodes.chime.triggerAttackRelease("C6", "2n");
+                        break;
+                    case 'finale':
+                        audioNodes.finaleBrass.triggerAttackRelease(["C2", "C3", "G3", "C4", "D#4"], "4m");
+                        audioNodes.noiseCrash.triggerAttackRelease("2m");
+                        audioNodes.kick.triggerAttackRelease("C1", "2n");
+                        break;
+                }
+            } catch(e) { console.warn("Audio err", e); }
+        }
+
+
+        // --- INIT MEDIAPIPE ---
+        async function initializeMediaPipe() {
+            if (handLandmarker) return true;
+            try {
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+                );
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    numHands: 1
+                });
+                return true;
+            } catch (error) {
+                console.error("MediaPipe Init Error:", error);
+                return false;
+            }
+        }
+
+        // Start downloading the AI model early so the scanner is ready faster
+        initializeMediaPipe();
+
+        // Unlock the ceremony video for playback with sound (needed on iPad / Safari)
+        function unlockCeremonyVideo() {
+            const v = els.ceremonyVideo;
+            v.muted = true;
+            const p = v.play();
+            if (p && p.then) {
+                p.then(() => { v.pause(); v.currentTime = 0; v.muted = false; })
+                 .catch(() => { v.muted = false; });
+            }
+        }
+
+        // --- STEP 1: WELCOME TOUCH INTERACTION ---
+        els.touchInitiator.addEventListener('pointerdown', async (e) => {
+            e.preventDefault();
+            if (currentState !== State.WELCOME) return;
+            currentState = State.INIT_CAM;
+
+            unlockCeremonyVideo();
+            try { await initAudio(); } catch (err) { console.warn("Audio init failed", err); }
+            playSound('touch');
+
+            els.touchInitiator.classList.add('scale-110');
+            els.touchInitiator.style.boxShadow = "0 0 50px #00d4ff";
+            els.initText.classList.remove('opacity-0');
+
+            later(transitionToScanner, 1500);
+        });
+
+        // --- STEP 2: ACTIVATE CAMERA & UI TRANSITION ---
+        function transitionToScanner() {
+            els.screens.welcome.classList.add('opacity-0');
+
+            later(() => {
+                els.screens.welcome.classList.add('pointer-events-none');
+                els.screens.scanner.classList.remove('opacity-0', 'pointer-events-none');
+                startCamera();
+            }, 1000);
+        }
+
+        async function startCamera() {
+            els.scannerTitle.textContent = "CAMERA INITIALISING...";
+            els.scannerSubtitle.textContent = "REQUESTING ACCESS";
+            els.btnRetryCam.classList.add('hidden');
+
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: 1280, height: 720 }
+                });
+                if (currentState !== State.INIT_CAM) { // restarted or skipped while waiting
+                    webcamStream.getTracks().forEach(t => t.stop());
+                    return;
+                }
+                els.video.srcObject = webcamStream;
+
+                els.video.addEventListener('loadeddata', () => {
+                    els.scannerTitle.textContent = "CAMERA ONLINE";
+                    els.scannerSubtitle.textContent = "INITIALISING AI ENGINE...";
+
+                    playSound('cam_active');
+
+                    // Match canvas dimensions to video aspect
+                    const rect = els.video.getBoundingClientRect();
+                    els.canvas.width = rect.width;
+                    els.canvas.height = rect.height;
+                    els.fxCanvas.width = rect.width;
+                    els.fxCanvas.height = rect.height;
+
+                    setupTrackingEnvironment();
+                }, { once: true });
+            } catch (err) {
+                console.error("Camera Error:", err);
+                els.scannerTitle.textContent = "CAMERA ERROR";
+                els.scannerSubtitle.textContent = "PERMISSION DENIED OR UNAVAILABLE";
+                els.btnRetryCam.classList.remove('hidden');
+            }
+        }
+
+        els.btnRetryCam.addEventListener('click', startCamera);
+
+        // --- STEP 3 & 4: TRACKING & POSITIONING ---
+        async function setupTrackingEnvironment() {
+            const isMpReady = await initializeMediaPipe();
+            if (currentState !== State.INIT_CAM) return; // restarted or skipped meanwhile
+            if (!isMpReady) {
+                els.scannerTitle.textContent = "AI INITIALISATION FAILED";
+                els.scannerSubtitle.textContent = "PLEASE REFRESH PAGE";
+                return;
+            }
+
+            els.scannerTitle.textContent = "SYSTEM READY";
+            els.scannerSubtitle.textContent = "PLEASE SHOW YOUR FINGER TO THE CAMERA";
+            els.targetReticle.classList.remove('hidden');
+
+            currentState = State.DETECTING;
+            isDetecting = true;
+            lastVideoTime = -1;
+            predictWebcam();
+        }
+
+        function drawLandmarks(landmarks) {
+            els.ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+            if (!landmarks || landmarks.length === 0) return;
+
+            const hand = landmarks[0];
+
+            els.ctx.strokeStyle = "rgba(0, 212, 255, 0.4)";
+            els.ctx.lineWidth = 2;
+
+            const connections = [
+                [0,1],[1,2],[2,3],[3,4], // Thumb
+                [0,5],[5,6],[6,7],[7,8], // Index
+                [5,9],[9,10],[10,11],[11,12], // Middle
+                [9,13],[13,14],[14,15],[15,16], // Ring
+                [13,17],[0,17],[17,18],[18,19],[19,20] // Pinky/Palm
+            ];
+
+            connections.forEach(conn => {
+                const p1 = hand[conn[0]];
+                const p2 = hand[conn[1]];
+                els.ctx.beginPath();
+                els.ctx.moveTo(p1.x * els.canvas.width, p1.y * els.canvas.height);
+                els.ctx.lineTo(p2.x * els.canvas.width, p2.y * els.canvas.height);
+                els.ctx.stroke();
+            });
+
+            els.ctx.fillStyle = "#00d4ff";
+            hand.forEach((p, idx) => {
+                els.ctx.beginPath();
+                const radius = idx === 8 ? 6 : 3; // Emphasize index fingertip
+                els.ctx.arc(p.x * els.canvas.width, p.y * els.canvas.height, radius, 0, 2 * Math.PI);
+                els.ctx.fill();
+                if (idx === 8) {
+                    els.ctx.shadowBlur = 10;
+                    els.ctx.shadowColor = "#00d4ff";
+                    els.ctx.stroke();
+                    els.ctx.shadowBlur = 0;
+                }
+            });
+        }
+
+        function predictWebcam() {
+            if (!isDetecting) return;
+
+            if (els.video.currentTime !== lastVideoTime && handLandmarker) {
+                lastVideoTime = els.video.currentTime;
+                const results = handLandmarker.detectForVideo(els.video, performance.now());
+
+                if (currentState === State.DETECTING || currentState === State.POSITIONING) {
+                    els.ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+
+                    if (results.landmarks && results.landmarks.length > 0) {
+                        const hand = results.landmarks[0];
+                        drawLandmarks(results.landmarks);
+
+                        if (currentState === State.DETECTING) {
+                            els.scannerTitle.textContent = "HAND DETECTED";
+                            els.scannerSubtitle.textContent = "LOCATING INDEX FINGER...";
+                            later(() => { if (currentState === State.DETECTING) currentState = State.POSITIONING; }, 500);
+                        }
+
+                        if (currentState === State.POSITIONING) {
+                            els.scannerTitle.textContent = "FINGER DETECTED";
+                            els.scannerSubtitle.textContent = "POSITION YOUR INDEX FINGER INSIDE THE SCANNER";
+
+                            // Index fingertip (landmark 8). Video and canvas are both mirrored, so coords align.
+                            const indexTip = hand[8];
+                            const cx = els.canvas.width / 2;
+                            const cy = els.canvas.height / 2;
+                            const px = indexTip.x * els.canvas.width;
+                            const py = indexTip.y * els.canvas.height;
+                            const distance = Math.hypot(px - cx, py - cy);
+
+                            if (distance < TARGET_RADIUS) {
+                                els.targetReticle.classList.add('active');
+                                if (positionStartTime === 0) {
+                                    positionStartTime = performance.now();
+                                    playSound('beep');
+                                } else {
+                                    const elapsed = performance.now() - positionStartTime;
+                                    const progress = Math.min((elapsed / POSITION_REQUIREMENT_MS) * 100, 100);
+                                    els.positionProgress.style.background = `conic-gradient(#00d4ff ${progress}%, transparent 0%)`;
+
+                                    if (elapsed >= POSITION_REQUIREMENT_MS) {
+                                        startScanningSequence();
+                                        return;
+                                    }
+                                }
+                            } else {
+                                resetPositioning();
+                            }
+                        }
+                    } else {
+                        resetPositioning();
+                        if (currentState === State.POSITIONING) currentState = State.DETECTING;
+                        els.scannerTitle.textContent = "SYSTEM READY";
+                        els.scannerSubtitle.textContent = "PLEASE SHOW YOUR FINGER TO THE CAMERA";
+                    }
+                }
+            }
+            animationFrameId = requestAnimationFrame(predictWebcam);
+        }
+
+        function resetPositioning() {
+            els.targetReticle.classList.remove('active');
+            positionStartTime = 0;
+            els.positionProgress.style.background = `conic-gradient(#00d4ff 0%, transparent 0%)`;
+        }
+
+
+        // --- STEP 5: VISUAL SCANNING SEQUENCE ---
+        function startScanningSequence() {
+            if (currentState === State.SCANNING || currentState === State.COMPLETE) return;
+            currentState = State.SCANNING;
+            isDetecting = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            playSound('scan_start');
+
+            els.scannerTitle.textContent = "FINGER POSITION CONFIRMED";
+            els.scannerSubtitle.textContent = "MAINTAIN POSITION";
+            els.targetReticle.classList.add('hidden');
+            els.scanOverlay.classList.add('active');
+
+            let progress = 0;
+            const messages = [
+                { p: 0, text: "INITIALISING SCAN..." },
+                { p: 20, text: "DETECTING FINGER POSITION..." },
+                { p: 50, text: "ANALYSING FINGER IMAGE..." },
+                { p: 80, text: "VISUAL SCANNING IN PROGRESS..." }
+            ];
+            let msgIdx = 0;
+
+            scanInterval = setInterval(() => {
+                progress += 1;
+                els.scanFxPercent.textContent = `${progress}%`;
+
+                if (msgIdx < messages.length && progress >= messages[msgIdx].p) {
+                    els.scanFxText.textContent = messages[msgIdx].text;
+                    msgIdx++;
+                }
+
+                if (progress >= 100) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                    completeScan();
+                }
+            }, 45); // ~4.5 seconds
+        }
+
+        function completeScan() {
+            currentState = State.COMPLETE;
+            playSound('scan_stop');
+            playSound('scan_complete');
+
+            els.scanFxText.textContent = "SCAN COMPLETE";
+            els.scannerTitle.textContent = "FINGER DETECTION SUCCESSFUL";
+            els.scannerSubtitle.textContent = "SYSTEM UNLOCKED";
+
+            flash('#00d4ff', 200);
+
+            later(transitionToVideo, 1500);
+        }
+
+        function stopCamera() {
+            isDetecting = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            els.video.srcObject = null;
+        }
+
+        // --- STEP 6: CEREMONY VIDEO ---
+        function transitionToVideo() {
+            currentState = State.VIDEO;
+            stopCamera();
+            stopBgm();
+
+            els.screens.scanner.classList.add('opacity-0', 'pointer-events-none');
+            els.screens.video.classList.remove('opacity-0', 'pointer-events-none');
+            els.topControls.classList.add('opacity-20');
+            els.btnSkipVideo.classList.remove('hidden');
+
+            const v = els.ceremonyVideo;
+            v.currentTime = 0;
+            v.muted = false;
+            const p = v.play();
+            if (p && p.catch) {
+                p.catch(err => {
+                    console.warn("Video autoplay blocked:", err);
+                    els.btnPlayVideo.classList.remove('hidden');
+                });
+            }
+        }
+
+        els.btnPlayVideo.addEventListener('click', () => {
+            els.btnPlayVideo.classList.add('hidden');
+            els.ceremonyVideo.play().catch(err => {
+                console.error("Video play failed:", err);
+                showFinal();
+            });
+        });
+
+        els.ceremonyVideo.addEventListener('ended', () => {
+            if (currentState === State.VIDEO) showFinal();
+        });
+
+        els.ceremonyVideo.addEventListener('error', () => {
+            console.error("Ceremony video could not be loaded");
+            if (currentState === State.VIDEO) showFinal();
+        });
+
+        els.btnSkipVideo.addEventListener('click', () => {
+            if (currentState === State.VIDEO) showFinal();
+        });
+
+        // --- STEP 7: FINAL SCREEN ---
+        function showFinal() {
+            currentState = State.FINAL;
+            els.ceremonyVideo.pause();
+            els.btnPlayVideo.classList.add('hidden');
+            els.btnSkipVideo.classList.add('hidden');
+            els.topControls.classList.remove('opacity-20');
+
+            els.screens.video.classList.add('opacity-0', 'pointer-events-none');
+            els.screens.final.classList.remove('opacity-0', 'pointer-events-none');
+
+            playSound('finale');
+            flash('radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 80%)', 300);
+
+            els.btnRestart.classList.remove('hidden');
+        }
+
+
+        // --- UTILS & CONTROLS ---
+
+        els.btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error("Fullscreen err:", err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            els.btnFullscreen.textContent = document.fullscreenElement ? "[X] EXIT FULLSCREEN" : "[ ] FULLSCREEN";
+        });
+
+        els.btnAudio.addEventListener('click', async () => {
+            if (!audioEnabled) {
+                await initAudio();
+            } else {
+                audioEnabled = false;
+                els.btnAudio.textContent = 'AUDIO: OFF';
+                els.btnAudio.classList.remove('bg-techBlue/20', 'text-techBlue', 'border-techBlue/50');
+                els.btnAudio.classList.add('text-silverMid', 'border-gray-600');
+                if (Tone.context.state === 'running') Tone.context.suspend();
+            }
+        });
+
+        els.btnRestart.addEventListener('click', () => {
+            pendingTimers.forEach(id => clearTimeout(id));
+            pendingTimers.clear();
+            if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+
+            stopBgm();
+            if (audioBuilt) {
+                try {
+                    audioNodes.finaleBrass.releaseAll();
+                    audioNodes.bgmDrone.volume.value = -12;
+                    audioNodes.bgmArp.volume.value = -18;
+                    audioNodes.bgmDrone.frequency.value = "C2";
+                } catch (e) { console.warn("Audio err", e); }
+            }
+
+            stopCamera();
+            resetPositioning();
+
+            els.ceremonyVideo.pause();
+            els.ceremonyVideo.currentTime = 0;
+
+            currentState = State.WELCOME;
+
+            els.screens.final.classList.add('opacity-0', 'pointer-events-none');
+            els.screens.video.classList.add('opacity-0', 'pointer-events-none');
+            els.screens.scanner.classList.add('opacity-0', 'pointer-events-none');
+            els.screens.welcome.classList.remove('opacity-0', 'pointer-events-none');
+
+            els.scanOverlay.classList.remove('active');
+            els.scanFxText.textContent = "INITIALISING SCAN...";
+            els.scanFxPercent.textContent = "0%";
+            els.targetReticle.classList.add('hidden');
+            els.btnRestart.classList.add('hidden');
+            els.btnSkipVideo.classList.add('hidden');
+            els.btnPlayVideo.classList.add('hidden');
+            els.topControls.classList.remove('opacity-20');
+            els.initText.classList.add('opacity-0');
+            els.flashBang.classList.remove('on');
+
+            els.touchInitiator.classList.remove('scale-110');
+            els.touchInitiator.style.boxShadow = "";
+
+            els.ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+        });
+
+        // Operator backup: press "S" on the keyboard to force a successful scan
+        // (in case the camera or AI fails during the live ceremony).
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 's' && e.key !== 'S') return;
+            if (currentState === State.INIT_CAM || currentState === State.DETECTING || currentState === State.POSITIONING) {
+                els.screens.welcome.classList.add('opacity-0', 'pointer-events-none');
+                els.screens.scanner.classList.remove('opacity-0', 'pointer-events-none');
+                startScanningSequence();
+            }
+        });
+
+        // Prevent pinch zoom and double tap zoom on touch devices
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
+            lastTouchEnd = now;
+        }, { passive: false });
+
+    </script>
+</body>
+</html>
