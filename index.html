@@ -973,8 +973,18 @@
             });
         });
 
+        // When the video ends, stay on its last frame with nothing on top of it.
+        // Press R (or refresh the page) to start again.
+        function endOnVideo() {
+            currentState = State.FINAL;
+            els.ceremonyVideo.pause();
+            els.btnPlayVideo.classList.add('hidden');
+            els.btnSkipVideo.classList.add('hidden');
+            els.topControls.classList.add('hidden');
+        }
+
         els.ceremonyVideo.addEventListener('ended', () => {
-            if (currentState === State.VIDEO) showFinal();
+            if (currentState === State.VIDEO) endOnVideo();
         });
 
         els.ceremonyVideo.addEventListener('error', () => {
@@ -983,7 +993,16 @@
         });
 
         els.btnSkipVideo.addEventListener('click', () => {
-            if (currentState === State.VIDEO) showFinal();
+            if (currentState !== State.VIDEO) return;
+            const v = els.ceremonyVideo;
+            const canSeekToEnd = isFinite(v.duration) && v.duration > 0.2 &&
+                v.seekable.length > 0 && v.seekable.end(v.seekable.length - 1) >= v.duration - 0.2;
+            if (canSeekToEnd) {
+                v.currentTime = v.duration - 0.1; // jump to the last frame
+                v.play().catch(() => endOnVideo());
+            } else {
+                endOnVideo();
+            }
         });
 
         // --- STEP 7: FINAL SCREEN ---
@@ -1032,7 +1051,9 @@
             }
         });
 
-        els.btnRestart.addEventListener('click', () => {
+        els.btnRestart.addEventListener('click', restartSystem);
+
+        function restartSystem() {
             pendingTimers.forEach(id => clearTimeout(id));
             pendingTimers.clear();
             if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
@@ -1067,7 +1088,7 @@
             els.btnRestart.classList.add('hidden');
             els.btnSkipVideo.classList.add('hidden');
             els.btnPlayVideo.classList.add('hidden');
-            els.topControls.classList.remove('opacity-20');
+            els.topControls.classList.remove('opacity-20', 'hidden');
             els.initText.classList.add('opacity-0');
             els.flashBang.classList.remove('on');
 
@@ -1075,11 +1096,16 @@
             els.touchInitiator.style.boxShadow = "";
 
             els.ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
-        });
+        }
 
-        // Operator backup: press "S" on the keyboard to force a successful scan
-        // (in case the camera or AI fails during the live ceremony).
+        // Operator keys:
+        //   S = force a successful scan (if the camera or AI fails during the live ceremony)
+        //   R = restart the whole system after the video has ended
         document.addEventListener('keydown', (e) => {
+            if ((e.key === 'r' || e.key === 'R') && currentState === State.FINAL) {
+                restartSystem();
+                return;
+            }
             if (e.key !== 's' && e.key !== 'S') return;
             if (currentState === State.INIT_CAM || currentState === State.DETECTING || currentState === State.POSITIONING) {
                 els.screens.welcome.classList.add('opacity-0', 'pointer-events-none');
